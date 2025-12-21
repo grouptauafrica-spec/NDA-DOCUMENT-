@@ -1,1 +1,1406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KABIRU Mining App - Phase 2</title>
+    
+    <!-- Firebase SDK v9 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-auth-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: white;
+        }
+
+        /* Debug Console */
+        .debug-console {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.95);
+            color: #00ff00;
+            padding: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 10px;
+            z-index: 10000;
+            border-top: 2px solid #00ff00;
+        }
+
+        .debug-line {
+            margin: 2px 0;
+            padding: 2px;
+        }
+
+        .debug-error { color: #ff0000; font-weight: bold; }
+        .debug-success { color: #00ff00; }
+        .debug-info { color: #00aaff; }
+
+        /* Login Page */
+        .login-page {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .auth-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin: 0 auto 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #FFD700;
+            font-size: 28px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #FFD700;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .form-input:focus {
+            border-color: #FFD700;
+        }
+
+        .auth-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            border: none;
+            border-radius: 12px;
+            color: #333;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .auth-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+        }
+
+        .auth-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Mining App */
+        .mining-app {
+            display: none;
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: 160px;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        /* Top Navigation Bar */
+        .top-bar {
+            display: flex;
+            justify-content: space-around;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .top-bar-btn {
+            flex: 1;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .top-bar-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .top-bar-btn.active {
+            background: rgba(255, 215, 0, 0.3);
+            color: #FFD700;
+        }
+
+        .user-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #FFD700;
+        }
+
+        .user-email {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .balance-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .balance-title {
+            font-size: 14px;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .balance-amount {
+            font-size: 42px;
+            font-weight: bold;
+            color: #FFD700;
+            margin: 15px 0;
+        }
+
+        .mining-rate {
+            font-size: 12px;
+            opacity: 0.7;
+            color: #00ff87;
+        }
+
+        .mining-timer {
+            font-size: 12px;
+            margin-top: 10px;
+            color: #00ff87;
+        }
+
+        .main-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .main-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            padding: 20px 10px;
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .main-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+        }
+
+        .main-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .sovereign-btn {
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            color: #333;
+        }
+
+        .value-btn {
+            background: linear-gradient(45deg, #00ff87, #60efff);
+            color: #333;
+        }
+
+        .reserve-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ffa726);
+            color: white;
+        }
+
+        .stats-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #FFD700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            opacity: 0.7;
+            text-transform: uppercase;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 400px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            color: #FFD700;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+            margin-top: -10px;
+        }
+
+        .close:hover {
+            color: #FFD700;
+        }
+
+        .wallet-address {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            word-break: break-all;
+            font-size: 12px;
+            color: #FFD700;
+            margin: 15px 0;
+        }
+
+        .balance-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .balance-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .balance-item-value {
+            font-size: 14px;
+            font-weight: bold;
+            color: #FFD700;
+        }
+
+        .balance-item-label {
+            font-size: 10px;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .transaction-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .transaction-icon {
+            font-size: 18px;
+        }
+
+        .transaction-details {
+            flex: 1;
+        }
+
+        .transaction-title {
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .transaction-time {
+            font-size: 10px;
+            opacity: 0.7;
+        }
+
+        .transaction-amount {
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .transaction-amount.positive {
+            color: #00ff87;
+        }
+
+        .transaction-amount.negative {
+            color: #ff6b6b;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 14px;
+            z-index: 10001;
+            display: none;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .notification.show {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from { transform: translate(-50%, -100%); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Debug Console -->
+    <div class="debug-console" id="debugConsole">
+        <div class="debug-line debug-info">🔍 Phase 2: Wallet & Transactions</div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification"></div>
+
+    <!-- Login Page -->
+    <div id="loginPage" class="login-page">
+        <div class="auth-container">
+            <div class="logo">iKb</div>
+            <h1>KABIRU</h1>
+
+            <!-- Login Form -->
+            <div id="loginContainer">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="loginEmail" placeholder="Enter email">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="loginPassword" placeholder="Enter password">
+                </div>
+                <button class="auth-button" onclick="handleLogin()">Sign In</button>
+                <div style="text-align: center; margin-top: 15px;">
+                    <span style="color: #FFD700; cursor: pointer; text-decoration: underline;" onclick="showSignup()">Sign Up</span>
+                </div>
+            </div>
+
+            <!-- Signup Form -->
+            <div id="signupContainer" class="hidden">
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <input type="text" class="form-input" id="signupName" placeholder="Your name">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="signupEmail" placeholder="Your email">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="signupPassword" placeholder="Min 6 characters">
+                </div>
+                <button class="auth-button" onclick="handleSignup()">Create Account</button>
+                <div style="text-align: center; margin-top: 15px;">
+                    <span style="color: #FFD700; cursor: pointer; text-decoration: underline;" onclick="showLogin()">Sign In</span>
+                </div>
+            </div>
+
+            <!-- Email Verification -->
+            <div id="verificationContainer" class="hidden">
+                <div style="text-align: center; margin: 30px 0;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">📧</div>
+                    <div style="font-size: 18px; color: #FFD700; margin-bottom: 10px;">Check Your Email</div>
+                    <div style="font-size: 14px; opacity: 0.8; line-height: 1.6;">
+                        Click the verification link, then return here.
+                    </div>
+                </div>
+                <button class="auth-button" onclick="checkVerification()">I've Verified</button>
+                <button class="auth-button" onclick="showLogin()" style="background: linear-gradient(45deg, #667eea, #764ba2);">Back to Login</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mining App -->
+    <div id="miningApp" class="mining-app">
+        <div class="container">
+            <!-- Top Navigation Bar -->
+            <div class="top-bar">
+                <button class="top-bar-btn" onclick="openWalletModal()">💰 WALLET</button>
+                <button class="top-bar-btn" onclick="openProfileModal()">👤 PROFILE</button>
+                <button class="top-bar-btn" onclick="showNotification('Coming in Phase 4!')">🛠️ UTILITIES</button>
+            </div>
+
+            <!-- User Section -->
+            <div class="user-section">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <div class="user-info">
+                    <div class="user-name" id="userName">User</div>
+                    <div class="user-email" id="userEmail">user@example.com</div>
+                </div>
+            </div>
+
+            <!-- Balance Section -->
+            <div class="balance-section">
+                <div class="balance-title">Your KABIRU Balance</div>
+                <div class="balance-amount" id="balance">0.0000 iKb</div>
+                <div class="mining-rate">Mining rate: <span id="miningRate">0.001</span> iKb/day</div>
+                <div class="mining-timer" id="miningTimer">Ready to mine!</div>
+            </div>
+
+            <!-- Main Mining Buttons -->
+            <div class="main-buttons">
+                <button class="main-button sovereign-btn" onclick="mineTokens('sovereign', 0.003)" id="sovereignBtn">
+                    SOVEREIGN
+                </button>
+                <button class="main-button value-btn" onclick="mineTokens('value', 0.0025)" id="valueBtn">
+                    VALUE
+                </button>
+                <button class="main-button reserve-btn" onclick="mineTokens('reserve', 0.002)" id="reserveBtn">
+                    RESERVE
+                </button>
+            </div>
+
+            <!-- Stats Section -->
+            <div class="stats-section">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalBalance">0.0000 iKb</div>
+                    <div class="stat-label">Total</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="miningStatus">Ready</div>
+                    <div class="stat-label">Status</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="minedBalance">0.0000 iKb</div>
+                    <div class="stat-label">Mined</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="tasksCompleted">0</div>
+                    <div class="stat-label">Tasks</div>
+                </div>
+            </div>
+
+            <!-- Logout Button -->
+            <button class="auth-button" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <!-- Wallet Modal -->
+    <div id="walletModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('walletModal')">&times;</span>
+            <h2 class="modal-title">💰 KABIRU Wallet</h2>
+            
+            <div style="font-size: 12px; opacity: 0.8; margin-bottom: 10px;">Wallet Address:</div>
+            <div class="wallet-address" id="walletAddress">Loading...</div>
+            
+            <div class="balance-grid">
+                <div class="balance-item">
+                    <div class="balance-item-value" id="walletMinedBalance">0.0000 iKb</div>
+                    <div class="balance-item-label">Mined</div>
+                </div>
+                <div class="balance-item">
+                    <div class="balance-item-value" id="walletReceivedBalance">0.0000 iKb</div>
+                    <div class="balance-item-label">Received</div>
+                </div>
+                <div class="balance-item">
+                    <div class="balance-item-value" id="walletLockedBalance">0.0000 iKb</div>
+                    <div class="balance-item-label">Locked</div>
+                </div>
+                <div class="balance-item">
+                    <div class="balance-item-value" id="walletReserveBalance">0.0000 iKb</div>
+                    <div class="balance-item-label">Reserve</div>
+                </div>
+            </div>
+            
+            <div style="background: rgba(255, 215, 0, 0.1); padding: 15px; border-radius: 10px; text-align: center; margin: 15px 0;">
+                <div style="font-size: 18px; font-weight: bold; color: #FFD700;" id="walletTotalBalance">0.0000 iKb</div>
+                <div style="font-size: 12px; opacity: 0.7;">Total KABIRU</div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
+                <button class="auth-button" onclick="openSendReceiveModal()" style="font-size: 12px; padding: 10px;">
+                    💸 Send / Receive
+                </button>
+                <button class="auth-button" onclick="openTransactionHistoryModal()" style="font-size: 12px; padding: 10px;">
+                    📊 History
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Send/Receive Modal -->
+    <div id="sendReceiveModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('sendReceiveModal')">&times;</span>
+            <h2 class="modal-title">💸 Send / Receive KABIRU</h2>
+            
+            <!-- Send Section -->
+            <div style="background: rgba(255, 107, 107, 0.1); padding: 15px; border-radius: 10px; margin: 15px 0; border: 1px solid rgba(255, 107, 107, 0.3);">
+                <div style="font-size: 16px; font-weight: bold; color: #ff6b6b; margin-bottom: 15px;">📤 Send KABIRU</div>
+                
+                <div class="form-group">
+                    <label class="form-label">Recipient Email:</label>
+                    <input type="email" class="form-input" id="sendRecipient" placeholder="recipient@email.com">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Amount (iKb):</label>
+                    <input type="number" class="form-input" id="sendAmount" placeholder="0.0000" step="0.0001" min="0.0001">
+                </div>
+                
+                <div style="font-size: 11px; opacity: 0.8; margin: 10px 0; text-align: center;">
+                    Available: <span id="availableToSend">0.0000 iKb</span> | Fee: 0.0001 iKb
+                </div>
+                
+                <button class="auth-button" onclick="sendKabiru()" style="font-size: 12px; padding: 10px; background: linear-gradient(45deg, #ff6b6b, #ffa726);">
+                    💸 Send KABIRU
+                </button>
+            </div>
+
+            <!-- Receive Section -->
+            <div style="background: rgba(0, 255, 135, 0.1); padding: 15px; border-radius: 10px; margin: 15px 0; border: 1px solid rgba(0, 255, 135, 0.3);">
+                <div style="font-size: 16px; font-weight: bold; color: #00ff87; margin-bottom: 15px;">📥 Receive KABIRU</div>
+                
+                <div style="background: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+                    <div style="font-size: 12px; opacity: 0.8; margin-bottom: 5px;">Your Wallet Address:</div>
+                    <div style="font-size: 11px; word-break: break-all; color: #00ff87;" id="receiveAddress">Loading...</div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button class="auth-button" onclick="copyAddress()" style="font-size: 12px; padding: 8px; background: linear-gradient(45deg, #00ff87, #60efff);">
+                        📋 Copy
+                    </button>
+                    <button class="auth-button" onclick="shareAddress()" style="font-size: 12px; padding: 8px; background: linear-gradient(45deg, #00ff87, #60efff);">
+                        📱 Share
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction History Modal -->
+    <div id="transactionHistoryModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('transactionHistoryModal')">&times;</span>
+            <h2 class="modal-title">📊 Transaction History</h2>
+            
+            <div id="transactionList" style="max-height: 400px; overflow-y: auto;">
+                <div style="text-align: center; opacity: 0.7; font-size: 14px; padding: 20px;">
+                    No transactions yet
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('profileModal')">&times;</span>
+            <h2 class="modal-title">👤 User Profile</h2>
+            
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div class="user-avatar" style="width: 80px; height: 80px; font-size: 32px; margin: 0 auto 15px;" id="modalUserAvatar">U</div>
+                <div style="font-size: 18px; font-weight: bold; color: #FFD700;" id="modalUserName">User Name</div>
+                <div style="font-size: 14px; opacity: 0.7;" id="modalUserEmail">user@example.com</div>
+            </div>
+            
+            <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 12px; margin: 15px 0;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 12px; opacity: 0.7;">Tasks Completed</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Debug logging
+        function debugLog(msg, type = 'info') {
+            const console = document.getElementById('debugConsole');
+            const line = document.createElement('div');
+            line.className = `debug-line debug-${type}`;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            console.appendChild(line);
+            console.scrollTop = console.scrollHeight;
+            window.console.log(msg);
+        }
+
+        // Global variables
+        let app, db, auth;
+        let currentUser = null;
+        let userBalance = 0.0000;
+        let minedBalance = 0.0000;
+        let receivedBalance = 0.0000;
+        let reserveBalance = 0.0000;
+        let lockedBalance = 0.0000;
+        let totalTasksCompleted = 0;
+        let miningRate = 0.001;
+        let isMining = false;
+        let userWalletAddress = '';
+        let transactionHistory = [];
+
+        debugLog('🚀 Phase 2 Starting...', 'info');
+
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCZhPjrl18PuyBh01Ou2KQMs-Ph3x2GP7o",
+            authDomain: "kabiru-mining-app.firebaseapp.com",
+            projectId: "kabiru-mining-app",
+            storageBucket: "kabiru-mining-app.appspot.com",
+            messagingSenderId: "217095254990",
+            appId: "1:217095254990:web:9eb44eff825666995fb19f"
+        };
+
+        // Initialize Firebase
+        try {
+            app = firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            auth = firebase.auth();
+            debugLog('✅ Firebase initialized', 'success');
+        } catch (error) {
+            debugLog('❌ Firebase error: ' + error.message, 'error');
+        }
+
+        // Generate wallet address
+        function generateWalletAddress() {
+            const chars = '0123456789abcdef';
+            let address = '0x';
+            for (let i = 0; i < 40; i++) {
+                address += chars[Math.floor(Math.random() * chars.length)];
+            }
+            return address;
+        }
+
+        // Show notification
+        function showNotification(message) {
+            const notif = document.getElementById('notification');
+            notif.textContent = message;
+            notif.classList.add('show');
+            setTimeout(() => {
+                notif.classList.remove('show');
+            }, 3000);
+        }
+
+        // Generate transaction ID
+        function generateTransactionId() {
+            return 'tx_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Save user data
+        async function saveUserData() {
+            const userData = {
+                balance: userBalance,
+                minedBalance: minedBalance,
+                receivedBalance: receivedBalance,
+                reserveBalance: reserveBalance,
+                lockedBalance: lockedBalance,
+                tasksCompleted: totalTasksCompleted,
+                miningRate: miningRate,
+                walletAddress: userWalletAddress,
+                transactionHistory: transactionHistory,
+                lastActive: new Date().toISOString()
+            };
+
+            localStorage.setItem('kabiruMiningData', JSON.stringify(userData));
+            debugLog('💾 Data saved to localStorage', 'info');
+
+            if (currentUser && db) {
+                try {
+                    await db.collection('users').doc(currentUser.uid).set({
+                        ...userData,
+                        email: currentUser.email,
+                        displayName: currentUser.displayName,
+                        lastActive: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                    debugLog('💾 Data saved to Firestore', 'success');
+                } catch (error) {
+                    debugLog('⚠️ Firestore save error: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // Load user data
+        async function loadUserData(user) {
+            debugLog('📂 Loading user data...', 'info');
+
+            // Try Firestore first
+            if (db) {
+                try {
+                    const doc = await db.collection('users').doc(user.uid).get();
+                    if (doc.exists) {
+                        const data = doc.data();
+                        minedBalance = data.minedBalance || 0;
+                        receivedBalance = data.receivedBalance || 0;
+                        reserveBalance = data.reserveBalance || 0;
+                        lockedBalance = data.lockedBalance || 0;
+                        userBalance = minedBalance + receivedBalance;
+                        totalTasksCompleted = data.tasksCompleted || 0;
+                        miningRate = data.miningRate || 0.001;
+                        userWalletAddress = data.walletAddress || generateWalletAddress();
+                        transactionHistory = data.transactionHistory || [];
+                        debugLog('✅ Loaded from Firestore', 'success');
+                        updateDisplay();
+                        return;
+                    }
+                } catch (error) {
+                    debugLog('⚠️ Firestore load error: ' + error.message, 'error');
+                }
+            }
+
+            // Fallback to localStorage
+            const savedData = localStorage.getItem('kabiruMiningData');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                minedBalance = data.minedBalance || 0;
+                receivedBalance = data.receivedBalance || 0;
+                reserveBalance = data.reserveBalance || 0;
+                lockedBalance = data.lockedBalance || 0;
+                userBalance = data.balance || 0;
+                totalTasksCompleted = data.tasksCompleted || 0;
+                miningRate = data.miningRate || 0.001;
+                userWalletAddress = data.walletAddress || generateWalletAddress();
+                transactionHistory = data.transactionHistory || [];
+                debugLog('✅ Loaded from localStorage', 'success');
+            } else {
+                debugLog('ℹ️ No saved data, starting fresh', 'info');
+                userWalletAddress = generateWalletAddress();
+            }
+
+            updateDisplay();
+        }
+
+        // Update display
+        function updateDisplay() {
+            userBalance = minedBalance + receivedBalance;
+            
+            document.getElementById('balance').textContent = userBalance.toFixed(4) + ' iKb';
+            document.getElementById('totalBalance').textContent = userBalance.toFixed(4) + ' iKb';
+            document.getElementById('minedBalance').textContent = minedBalance.toFixed(4) + ' iKb';
+            document.getElementById('tasksCompleted').textContent = totalTasksCompleted;
+            document.getElementById('miningRate').textContent = miningRate.toFixed(3);
+            
+            if (currentUser) {
+                const name = currentUser.displayName || 'User';
+                const initial = name.charAt(0).toUpperCase();
+                
+                document.getElementById('userName').textContent = name;
+                document.getElementById('userEmail').textContent = currentUser.email;
+                document.getElementById('userAvatar').textContent = initial;
+                
+                // Update modal fields
+                document.getElementById('modalUserName').textContent = name;
+                document.getElementById('modalUserEmail').textContent = currentUser.email;
+                document.getElementById('modalUserAvatar').textContent = initial;
+                document.getElementById('modalUserBalance').textContent = userBalance.toFixed(4) + ' iKb';
+                document.getElementById('modalUserTasks').textContent = totalTasksCompleted;
+            }
+        }
+
+        // Mining function
+        async function mineTokens(type, reward) {
+            debugLog(`⛏️ Mining ${type} started`, 'info');
+            
+            if (isMining) {
+                showNotification('Already mining! Please wait.');
+                return;
+            }
+
+            isMining = true;
+            document.getElementById('miningStatus').textContent = 'Mining...';
+            
+            // Disable buttons
+            document.getElementById('sovereignBtn').disabled = true;
+            document.getElementById('valueBtn').disabled = true;
+            document.getElementById('reserveBtn').disabled = true;
+            
+            showNotification(`🔥 ${type.toUpperCase()} mining started!`);
+            
+            // Mining countdown
+            let countdown = 3;
+            const timer = setInterval(() => {
+                document.getElementById('miningTimer').textContent = `Mining... ${countdown}s`;
+                countdown--;
+                if (countdown < 0) {
+                    clearInterval(timer);
+                }
+            }, 1000);
+            
+            setTimeout(async () => {
+                minedBalance += reward;
+                userBalance = minedBalance + receivedBalance;
+                totalTasksCompleted++;
+                
+                // Add transaction
+                const transaction = {
+                    id: generateTransactionId(),
+                    type: 'mining',
+                    subtype: type,
+                    amount: reward,
+                    timestamp: new Date().toISOString(),
+                    status: 'completed'
+                };
+                transactionHistory.unshift(transaction);
+                
+                updateDisplay();
+                await saveUserData();
+                
+                document.getElementById('miningStatus').textContent = 'Completed';
+                document.getElementById('miningTimer').textContent = 'Ready to mine!';
+                showNotification(`✅ Earned ${reward.toFixed(4)} iKb!`);
+                
+                debugLog(`✅ Mining complete: +${reward.toFixed(4)} iKb`, 'success');
+                
+                // Enable buttons
+                document.getElementById('sovereignBtn').disabled = false;
+                document.getElementById('valueBtn').disabled = false;
+                document.getElementById('reserveBtn').disabled = false;
+                
+                isMining = false;
+                
+                setTimeout(() => {
+                    document.getElementById('miningStatus').textContent = 'Ready';
+                }, 2000);
+                
+            }, 3500);
+        }
+
+        // Send KABIRU
+        async function sendKabiru() {
+            const recipient = document.getElementById('sendRecipient').value.trim();
+            const amount = parseFloat(document.getElementById('sendAmount').value);
+            const fee = 0.0001;
+            const totalAmount = amount + fee;
+            const availableBalance = minedBalance + receivedBalance;
+            
+            if (!recipient) {
+                showNotification('Please enter recipient email');
+                return;
+            }
+            
+            if (!amount || amount <= 0) {
+                showNotification('Please enter valid amount');
+                return;
+            }
+            
+            if (totalAmount > availableBalance) {
+                showNotification('Insufficient balance');
+                return;
+            }
+            
+            try {
+                debugLog('💸 Sending tokens...', 'info');
+                
+                // Deduct from sender
+                if (minedBalance >= totalAmount) {
+                    minedBalance -= totalAmount;
+                } else {
+                    const remaining = totalAmount - minedBalance;
+                    minedBalance = 0;
+                    receivedBalance -= remaining;
+                }
+                
+                // Try to find recipient in Firestore
+                if (db) {
+                    try {
+                        const recipientQuery = await db.collection('users').where('email', '==', recipient).limit(1).get();
+                        
+                        if (!recipientQuery.empty) {
+                            const recipientDoc = recipientQuery.docs[0];
+                            await db.collection('users').doc(recipientDoc.id).update({
+                                receivedBalance: firebase.firestore.FieldValue.increment(amount)
+                            });
+                            debugLog('✅ Recipient found and credited', 'success');
+                        } else {
+                            debugLog('⚠️ Recipient not found', 'info');
+                        }
+                    } catch (error) {
+                        debugLog('⚠️ Recipient search error: ' + error.message, 'error');
+                    }
+                }
+                
+                // Add transaction
+                const transaction = {
+                    id: generateTransactionId(),
+                    type: 'send',
+                    recipient: recipient,
+                    amount: amount,
+                    fee: fee,
+                    timestamp: new Date().toISOString(),
+                    status: 'completed'
+                };
+                transactionHistory.unshift(transaction);
+                
+                updateDisplay();
+                await saveUserData();
+                
+                showNotification(`✅ Sent ${amount.toFixed(4)} iKb!`);
+                debugLog(`✅ Transfer complete`, 'success');
+                
+                // Clear inputs
+                document.getElementById('sendRecipient').value = '';
+                document.getElementById('sendAmount').value = '';
+                
+                closeModal('sendReceiveModal');
+                
+            } catch (error) {
+                debugLog('❌ Send error: ' + error.message, 'error');
+                showNotification('Transfer failed');
+            }
+        }
+
+        // Copy wallet address
+        function copyAddress() {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(userWalletAddress).then(() => {
+                    showNotification('📋 Address copied!');
+                }).catch(() => {
+                    fallbackCopy(userWalletAddress);
+                });
+            } else {
+                fallbackCopy(userWalletAddress);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showNotification('📋 Address copied!');
+            } catch (err) {
+                showNotification('Copy failed');
+            }
+            document.body.removeChild(textArea);
+        }
+
+        // Share wallet address
+        function shareAddress() {
+            const shareText = `Send KABIRU tokens to: ${userWalletAddress}`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'My KABIRU Wallet',
+                    text: shareText
+                }).then(() => {
+                    showNotification('📱 Shared!');
+                }).catch(() => {
+                    copyAddress();
+                });
+            } else {
+                copyAddress();
+            }
+        }
+
+        // Open modals
+        function openWalletModal() {
+            document.getElementById('walletAddress').textContent = userWalletAddress;
+            document.getElementById('walletMinedBalance').textContent = minedBalance.toFixed(4) + ' iKb';
+            document.getElementById('walletReceivedBalance').textContent = receivedBalance.toFixed(4) + ' iKb';
+            document.getElementById('walletLockedBalance').textContent = lockedBalance.toFixed(4) + ' iKb';
+            document.getElementById('walletReserveBalance').textContent = reserveBalance.toFixed(4) + ' iKb';
+            document.getElementById('walletTotalBalance').textContent = (minedBalance + receivedBalance + lockedBalance + reserveBalance).toFixed(4) + ' iKb';
+            document.getElementById('walletModal').style.display = 'block';
+        }
+
+        function openSendReceiveModal() {
+            document.getElementById('availableToSend').textContent = (minedBalance + receivedBalance).toFixed(4) + ' iKb';
+            document.getElementById('receiveAddress').textContent = userWalletAddress;
+            document.getElementById('sendReceiveModal').style.display = 'block';
+            closeModal('walletModal');
+        }
+
+        function openTransactionHistoryModal() {
+            displayTransactionHistory();
+            document.getElementById('transactionHistoryModal').style.display = 'block';
+            closeModal('walletModal');
+        }
+
+        function openProfileModal() {
+            document.getElementById('profileModal').style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Display transaction history
+        function displayTransactionHistory() {
+            const list = document.getElementById('transactionList');
+            
+            if (transactionHistory.length === 0) {
+                list.innerHTML = '<div style="text-align: center; opacity: 0.7; font-size: 14px; padding: 20px;">No transactions yet</div>';
+                return;
+            }
+            
+            let html = '';
+            transactionHistory.slice(0, 20).forEach(tx => {
+                const date = new Date(tx.timestamp).toLocaleDateString();
+                const time = new Date(tx.timestamp).toLocaleTimeString();
+                let icon = '⚡';
+                let amountClass = 'positive';
+                let amountText = `+${tx.amount.toFixed(4)} iKb`;
+                let description = '';
+                
+                if (tx.type === 'mining') {
+                    icon = '⛏️';
+                    description = `${tx.subtype} mining`;
+                } else if (tx.type === 'send') {
+                    icon = '📤';
+                    amountClass = 'negative';
+                    amountText = `-${tx.amount.toFixed(4)} iKb`;
+                    description = `Sent to ${tx.recipient}`;
+                } else if (tx.type === 'receive') {
+                    icon = '📥';
+                    description = `Received from ${tx.sender || 'Unknown'}`;
+                }
+                
+                html += `
+                    <div class="transaction-item">
+                        <div class="transaction-icon">${icon}</div>
+                        <div class="transaction-details">
+                            <div class="transaction-title">${description}</div>
+                            <div class="transaction-time">${date} ${time}</div>
+                        </div>
+                        <div class="transaction-amount ${amountClass}">${amountText}</div>
+                    </div>
+                `;
+            });
+            
+            list.innerHTML = html;
+        }
+
+        // Email verification handler
+        async function handleEmailVerificationLink(oobCode) {
+            debugLog('📧 Processing verification link', 'info');
+            try {
+                await auth.applyActionCode(oobCode);
+                debugLog('✅ Email verified!', 'success');
+                window.history.replaceState({}, document.title, window.location.pathname);
+                showNotification('Email verified! Please sign in.');
+                setTimeout(() => showLogin(), 2000);
+            } catch (error) {
+                debugLog('❌ Verification error: ' + error.message, 'error');
+                showNotification('Verification failed.');
+                setTimeout(() => showLogin(), 2000);
+            }
+        }
+
+        // Auth state listener
+        function setupAuthListener() {
+            debugLog('👂 Auth listener active', 'info');
+            
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    debugLog('👤 User: ' + user.email, 'info');
+                    await user.reload();
+                    
+                    if (user.emailVerified) {
+                        debugLog('✅ Email verified', 'success');
+                        currentUser = user;
+                        await loadUserData(user);
+                        showMiningApp();
+                    } else {
+                        debugLog('⚠️ Not verified', 'info');
+                        showVerification();
+                    }
+                } else {
+                    debugLog('👤 No user', 'info');
+                    showLoginPage();
+                }
+            });
+        }
+
+        // Login
+        async function handleLogin() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                showNotification('Please fill in all fields');
+                return;
+            }
+            
+            try {
+                debugLog('🔐 Login attempt', 'info');
+                const cred = await auth.signInWithEmailAndPassword(email, password);
+                
+                if (!cred.user.emailVerified) {
+                    showNotification('Please verify your email first');
+                    await auth.signOut();
+                    return;
+                }
+                
+                debugLog('✅ Login successful', 'success');
+                showNotification('Login successful!');
+            } catch (error) {
+                debugLog('❌ Login error: ' + error.message, 'error');
+                showNotification('Login failed: ' + error.message);
+            }
+        }
+
+        // Signup
+        async function handleSignup() {
+            const name = document.getElementById('signupName').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
+            const password = document.getElementById('signupPassword').value;
+            
+            if (!name || !email || !password) {
+                showNotification('Please fill in all fields');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showNotification('Password must be 6+ characters');
+                return;
+            }
+            
+            try {
+                debugLog('📝 Creating account', 'info');
+                const cred = await auth.createUserWithEmailAndPassword(email, password);
+                await cred.user.updateProfile({ displayName: name });
+                await cred.user.sendEmailVerification({
+                    url: window.location.origin + window.location.pathname,
+                    handleCodeInApp: false
+                });
+                debugLog('✅ Account created', 'success');
+                showNotification('Account created! Check email.');
+                showVerification();
+            } catch (error) {
+                debugLog('❌ Signup error: ' + error.message, 'error');
+                showNotification('Signup failed: ' + error.message);
+            }
+        }
+
+        // Check verification
+        async function checkVerification() {
+            if (auth.currentUser) {
+                await auth.currentUser.reload();
+                if (auth.currentUser.emailVerified) {
+                    showNotification('Verified! Logging in...');
+                    setTimeout(() => {
+                        currentUser = auth.currentUser;
+                        loadUserData(auth.currentUser);
+                        showMiningApp();
+                    }, 1500);
+                } else {
+                    showNotification('Not verified yet. Check email.');
+                }
+            }
+        }
+
+        // Logout
+        async function logout() {
+            try {
+                await saveUserData();
+                await auth.signOut();
+                currentUser = null;
+                userBalance = 0;
+                minedBalance = 0;
+                receivedBalance = 0;
+                totalTasksCompleted = 0;
+                transactionHistory = [];
+                debugLog('🚪 Logged out', 'info');
+                showNotification('Logged out');
+                showLoginPage();
+            } catch (error) {
+                debugLog('❌ Logout error: ' + error.message, 'error');
+            }
+        }
+
+        // UI functions
+        function showLoginPage() {
+            document.getElementById('loginPage').style.display = 'flex';
+            document.getElementById('miningApp').style.display = 'none';
+            showLogin();
+        }
+
+        function showMiningApp() {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('miningApp').style.display = 'block';
+        }
+
+        function showLogin() {
+            document.getElementById('loginContainer').classList.remove('hidden');
+            document.getElementById('signupContainer').classList.add('hidden');
+            document.getElementById('verificationContainer').classList.add('hidden');
+        }
+
+        function showSignup() {
+            document.getElementById('loginContainer').classList.add('hidden');
+            document.getElementById('signupContainer').classList.remove('hidden');
+            document.getElementById('verificationContainer').classList.add('hidden');
+        }
+
+        function showVerification() {
+            document.getElementById('loginContainer').classList.add('hidden');
+            document.getElementById('signupContainer').classList.add('hidden');
+            document.getElementById('verificationContainer').classList.remove('hidden');
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            debugLog('📄 DOM loaded', 'success');
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const mode = urlParams.get('mode');
+            const oobCode = urlParams.get('oobCode');
+            
+            if (mode === 'verifyEmail' && oobCode) {
+                handleEmailVerificationLink(oobCode);
+            } else {
+                setupAuthListener();
+            }
+        });
+
+        debugLog('✅ Phase 2 loaded successfully', 'success');
+    </script>
+</body>
+</html>
